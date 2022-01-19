@@ -28,7 +28,6 @@ namespace NextEpisode
             InitializeComponent();
 
             Task.WhenAll(
-
                 ParseSeries("https://next-episode.net/the-blacklist"),
                 ParseSeries("https://next-episode.net/family-guy"),
                 ParseSeries("https://next-episode.net/rick-and-morty"),
@@ -44,7 +43,12 @@ namespace NextEpisode
                 ParseSeries("https://next-episode.net/the-walking-dead", false),
                 ParseSeries("https://next-episode.net/mayday"),
                 ParseSeries("https://next-episode.net/fear-the-walking-dead"),
-                ParseSeries("https://next-episode.net/american-dad")
+                ParseSeries("https://next-episode.net/american-dad"),
+                ParseSeries("https://next-episode.net/tatort"),
+                ParseSeries("https://next-episode.net/strater"),
+                ParseSeries("https://next-episode.net/blackout-2021"),
+                ParseSeries("https://next-episode.net/sherlock"),
+                ParseSeries("https://next-episode.net/mayday")
             ).ContinueWith(results =>
             {
                 var allResults = results.Result.SelectMany(x => x).ToArray();
@@ -76,7 +80,12 @@ namespace NextEpisode
                     }
                     
                     TreeView.Items.Add(dayitem);
+
+                    if (dt.Date == DateTime.Today)
+                        dayitem.BringIntoView();
+
                 }
+
             }, TaskScheduler.FromCurrentSynchronizationContext());
 
         }
@@ -109,44 +118,49 @@ namespace NextEpisode
             var seriesName = doc.DocumentNode.SelectSingleNode("//div[@id=\"show_name\"]")?.InnerText?.Trim();
 
             var prevEpisode = doc.DocumentNode.SelectSingleNode("//div[@id=\"previous_episode\"]");
-            var prevSubheadlines = prevEpisode.SelectNodes(".//div[@class=\"subheadline\"]");
-
-            var title = prevEpisode.SelectSingleNode(".//div[@class=\"sub_main\"]")?.InnerText?.Trim();
-            var date = prevSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Date"))?.NextSibling?.InnerText?.Trim();
-            var season = prevSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Season"))?.NextSibling?.InnerText?.Trim();
-            var episode = prevSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Episode"))?.NextSibling?.InnerText?.Trim();
-
-            if (title != null && date != null && season != null && episode != null)
+            if (prevEpisode != null)
             {
-                try
-                {
-                    if (int.TryParse(episode, out int episodeInt))
-                        episode = $"{episodeInt:D2}";
+                var prevSubheadlines = prevEpisode.SelectNodes(".//div[@class=\"subheadline\"]");
 
-                    results.Add(new Result
-                    {
-                        title = title,
-                        seriesName = seriesName ?? "",
-                        season = int.Parse(season),
-                        episode = episode,
-                        type = Result.EpisodeType.Previous,
-                        date = DateTime.Parse(date)
-                    });
-                } catch(Exception ex)
+                var title = prevEpisode.SelectSingleNode(".//div[@class=\"sub_main\"]")?.InnerText?.Trim();
+                var date = prevSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Date"))?.NextSibling?.InnerText?.Trim();
+                var season = prevSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Season"))?.NextSibling?.InnerText?.Trim();
+                var episode = prevSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Episode"))?.NextSibling?.InnerText?.Trim();
+
+                if (title != null && date != null && season != null && episode != null)
                 {
-                    Debugger.Break();
+                    try
+                    {
+                        if (int.TryParse(episode, out int episodeInt))
+                            episode = $"{episodeInt:D2}";
+
+                        results.Add(new Result
+                        {
+                            title = title,
+                            seriesName = seriesName ?? "",
+                            season = int.Parse(season),
+                            episode = episode,
+                            type = Result.EpisodeType.Previous,
+                            date = DateTime.Parse(date)
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Debugger.Break();
+                    }
                 }
+
             }
 
 
             var nextEpisode = doc.DocumentNode.SelectSingleNode("//div[@id=\"next_episode\"]");
-            var nextSubheadlines = nextEpisode.SelectNodes(".//div[@class=\"subheadline\"]");
+            var nextSubheadlines = nextEpisode?.SelectNodes(".//div[@class=\"subheadline\"]");
             if (nextSubheadlines != null)
             {
-                title = nextEpisode.SelectSingleNode(".//div[@class=\"sub_main\"]")?.InnerText?.Trim();
-                date = nextSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Date"))?.NextSibling?.InnerText?.Trim();
-                season = nextSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Season"))?.NextSibling?.InnerText?.Trim();
-                episode = nextSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Episode"))?.NextSibling?.InnerText?.Trim();
+                var title = nextEpisode.SelectSingleNode(".//div[@class=\"sub_main\"]")?.InnerText?.Trim();
+                var date = nextSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Date"))?.NextSibling?.InnerText?.Trim();
+                var season = nextSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Season"))?.NextSibling?.InnerText?.Trim();
+                var episode = nextSubheadlines.FirstOrDefault(x => x.InnerText.Contains("Episode"))?.NextSibling?.InnerText?.Trim();
 
                 if (title != null && date != null && season != null && episode != null)
                 {
@@ -202,6 +216,9 @@ namespace NextEpisode
 
                 if (int.TryParse(episodeNr, out int episodeInt))
                     episodeNr = $"{episodeInt:D2}";
+
+                if (date == null)
+                    continue;
 
                 results.Add(new Result
                 {
