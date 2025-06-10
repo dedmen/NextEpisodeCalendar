@@ -8,6 +8,17 @@
         Title="Next Episode checker" Height="450" Width="800">
     <Grid>
         <TreeView x:Name="TreeView">
+            <TreeView.Resources>
+                <HierarchicalDataTemplate
+                    DataType="{x:Type local:CheckableItem}" 
+                    ItemsSource="{Binding Children}">
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox IsChecked="{Binding IsChecked}"/>
+                        <TextBlock Text="{Binding Value}"/>
+                    </StackPanel>
+                </HierarchicalDataTemplate>
+            </TreeView.Resources>
+
             <TreeViewItem Header="test" IsExpanded="True"/>
         </TreeView>
 
